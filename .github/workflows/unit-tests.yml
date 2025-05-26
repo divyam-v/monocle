@@ -30,20 +30,9 @@ jobs:
 
       - name: Install package and dev dependencies
         run: |
-          pip install dist/*.whl[dev]
+          pip install --upgrade pip
+          pip install ".[dev]"
 
       - name: Run unit tests with coverage
         run: |
-          pytest --cov=./ --cov-report=term --cov-report=xml -vv tests/unit
-
-      - name: Upload coverage to GitHub summary
-        if: always()
-        run: |
-          echo '### Pytest Coverage Report' >> $GITHUB_STEP_SUMMARY
-          coverage report >> $GITHUB_STEP_SUMMARY
-
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-xml
-          path: coverage.xml
+          pytest -vv tests/unit
