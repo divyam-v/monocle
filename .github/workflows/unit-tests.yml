@@ -21,6 +21,11 @@ jobs:
       - name: Install toml
         run: pip install toml
 
+      - name: Build wheels
+        run: |
+          chmod +x ./.github/scripts/build.sh
+          ./.github/scripts/build.sh
+
       - name: Install pytest
         run: pip install pytest
 
