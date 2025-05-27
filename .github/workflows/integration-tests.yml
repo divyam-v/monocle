@@ -24,15 +24,15 @@ jobs:
         run: |
           echo "$INTEGRATION_TEST_CONFIG" > env.json
           python <<EOF
-      import json, os
+          import json, os
 
-      with open('env.json') as f:
-          envs = json.load(f)
+          with open('env.json') as f:
+              envs = json.load(f)
 
-      with open(os.environ['GITHUB_ENV'], 'a') as env_file:
-          for k, v in envs.items():
-              print(f'::add-mask::{v}')  # mask secret values in logs
-              env_file.write(f'{k}={v}\n')
+          with open(os.environ['GITHUB_ENV'], 'a') as env_file:
+              for k, v in envs.items():
+                  print(f'::add-mask::{v}')  # mask secret values in logs
+                  env_file.write(f'{k}={v}\n')
         
 
       - name: Install build dependencies
