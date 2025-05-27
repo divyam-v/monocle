@@ -1,0 +1,67 @@
+name: Integration Tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build setuptools wheel toml
+
+      - name: Build wheels
+        run: |
+          chmod +x ./.github/scripts/build.sh
+          ./.github/scripts/build.sh
+
+      - name: Install package and dev dependencies
+        run: |
+          pip install --upgrade pip
+          pip install ".[dev]"
+          pip install pytest-cov
+
+      - name: Parse integration secrets and set as env vars
+        id: set-secrets
+        run: |
+          echo "${{ secrets.INTEGRATION_TEST_CONFIG }}" > config.json
+          python3 -c "
+          import json, os
+          with open('config.json') as f:
+              secrets = json.load(f)
+          for k, v in secrets.items():
+              print(f'::add-mask::{v}')
+              print(f'{k}={v}')
+          " >> $GITHUB_ENV
+
+      - name: Run integration tests
+        env:
+          # All keys from the JSON will be available as environment variables
+          # You can also add more env vars here if needed
+        run: |
+          pytest --cov=./ --cov-report=term --cov-report=xml -vv tests/integration
+
+      - name: Upload coverage to GitHub summary
+        if: always()
+        run: |
+          echo '### Pytest Coverage Report' >> $GITHUB_STEP_SUMMARY
+          coverage report >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
