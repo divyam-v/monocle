@@ -18,6 +18,20 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Export env vars from secret JSON
+        env:
+          INTEGRATION_TEST_CONFIG: ${{ secrets.INTEGRATION_TEST_CONFIG }}
+        run: |
+          echo "$INTEGRATION_TEST_CONFIG" > env.json
+          python -c "
+          import json, os
+          with open('env.json') as f:
+              envs = json.load(f)
+          with open(os.environ['GITHUB_ENV'], 'a') as env_file:
+              for k, v in envs.items():
+                  print(f'::add-mask::{v}')  # mask secret values in logs
+                  env_file.write(f'{k}={v}\n')
+
       - name: Install build dependencies
         run: |
           python -m pip install --upgrade pip
@@ -34,27 +48,7 @@ jobs:
           pip install ".[dev]"
           pip install pytest-cov
 
-      - name: Export env vars from secret JSON
-        env:
-          INTEGRATION_TEST_CONFIG: ${{ secrets.INTEGRATION_TEST_CONFIG }}  # Your secret containing JSON with env vars
-        run: |
-          echo "$INTEGRATION_TEST_CONFIG" > env.json
-          python -c "
-          import json, os
-          with open('env.json') as f:
-            envs = json.load(f)
-          for k, v in envs.items():
-            # Export each env var for the rest of the job
-            print(f'::add-mask::{v}')  # mask secret values in logs
-            os.environ[k] = v
-            print(f'::set-env name={k}::{v}')
-          "
-          # Note: 'set-env' is deprecated; use `echo "{name}={value}" >> $GITHUB_ENV` instead
-          # So better:
-          with open('env.json') as f:
-            envs = json.load(f)
-          for k,v in envs.items():
-            print(f'{k}={v}', file=open(os.environ["GITHUB_ENV"], "a"))
+
 
       - name: Run integration tests
         run: |
