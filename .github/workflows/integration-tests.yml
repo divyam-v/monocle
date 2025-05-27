@@ -51,8 +51,6 @@ jobs:
           pip install ".[dev]"
           pip install pytest pytest-asyncio pytest-cov
 
-
-
       - name: Run integration tests
         run: |
           pytest -vv tests/integration

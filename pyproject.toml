@@ -74,7 +74,9 @@ dev = [
   'langgraph==0.2.68',
   'opendal==0.45.14',
   'anthropic==0.49.0',
-  'anthropic-haystack'
+  'anthropic-haystack',
+  'llama-index-llms-anthropic',
+  'langchain-anthropic'
 ]
 
 azure = [
