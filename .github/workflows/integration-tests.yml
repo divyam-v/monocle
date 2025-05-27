@@ -37,15 +37,15 @@ jobs:
       - name: Parse integration secrets and set as env vars
         id: set-secrets
         run: |
-          echo "${{ secrets.INTEGRATION_TEST_CONFIG }}" > config.json
+          echo "${{ secrets.INTEGRATION_TEST_CONFIG_B64 }}" | base64 -d > config.json
           python3 -c "
-          import json, os
+          import json
           with open('config.json') as f:
               secrets = json.load(f)
           for k, v in secrets.items():
               print(f'::add-mask::{v}')
               print(f'{k}={v}')
-          " >> $GITHUB_ENV
+              " >> $GITHUB_ENV
 
       - name: Run integration tests
         run: |
