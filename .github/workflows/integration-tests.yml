@@ -49,7 +49,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install ".[dev]"
-          pip install pytest-cov
+          pip install pytest pytest-asyncio pytest-cov
 
 
 
