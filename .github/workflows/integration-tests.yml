@@ -34,16 +34,28 @@ jobs:
           pip install ".[dev]"
           pip install pytest-cov
 
-      - name: Decode ENV JSON and write to .env
+      - name: Export env vars from secret JSON
+        env:
+          INTEGRATION_TEST_CONFIG: ${{ secrets.INTEGRATION_TEST_CONFIG }}  # Your secret containing JSON with env vars
         run: |
-          echo "$INTEGRATION_TEST_CONFIG" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > .env
+          echo "$INTEGRATION_TEST_CONFIG" > env.json
+          python -c "
+          import json, os
+          with open('env.json') as f:
+            envs = json.load(f)
+          for k, v in envs.items():
+            # Export each env var for the rest of the job
+            print(f'::add-mask::{v}')  # mask secret values in logs
+            os.environ[k] = v
+            print(f'::set-env name={k}::{v}')
+          "
+          # Note: 'set-env' is deprecated; use `echo "{name}={value}" >> $GITHUB_ENV` instead
+          # So better:
+          with open('env.json') as f:
+            envs = json.load(f)
+          for k,v in envs.items():
+            print(f'{k}={v}', file=open(os.environ["GITHUB_ENV"], "a"))
 
-      - name: Export variables from .env
-        run: |
-          set -a
-          source .env
-          set +a
-      
       - name: Run integration tests
         run: |
           pytest -vv tests/integration
