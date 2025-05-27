@@ -48,9 +48,6 @@ jobs:
           " >> $GITHUB_ENV
 
       - name: Run integration tests
-        env:
-          # All keys from the JSON will be available as environment variables
-          # You can also add more env vars here if needed
         run: |
           pytest --cov=./ --cov-report=term --cov-report=xml -vv tests/integration
 
