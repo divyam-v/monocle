@@ -13,22 +13,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Parse integration secrets and set as env vars
-        id: set-secrets
+      - name: Decode ENV JSON and write to .env
         run: |
-          echo "${{ secrets.INTEGRATION_TEST_CONFIG_B64 }}" | base64 -d > config.json
-          cat config.json  # Optional: debug
-          python3 -c "
-          import json
-          with open('config.json') as f:
-              content = f.read().strip()
-              if not content:
-                  raise ValueError('config.json is empty.')
-              secrets = json.loads(content)
-          for k, v in secrets.items():
-              print(f'::add-mask::{v}')
-              print(f'{k}={v}')
-          " >> $GITHUB_ENV
+          echo "$INTEGRATION_TEST_CONFIG" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > .env
+
+      - name: Export variables from .env
+        run: |
+          set -a
+          source .env
+          set +a
 
       - name: Set up Python
         uses: actions/setup-python@v5
