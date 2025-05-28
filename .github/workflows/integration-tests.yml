@@ -65,7 +65,7 @@ jobs:
       - name: Add Failed Files to Summary (Table)
         if: always()
         run: |
-          if [[ -s failed_files.txt ]]; then
+          if [[ -f failed_files.txt && -s failed_files.txt ]]; then
             {
               echo "### ❌ Failed Test Files"
               echo ""
