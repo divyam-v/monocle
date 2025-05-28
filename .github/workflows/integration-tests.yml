@@ -50,24 +50,34 @@ jobs:
           pip install ".[dev]"
 
       - name: Run integration tests
+        id: run-tests
         run: |
+          set -o pipefail
           pytest tests/integration --tb=short | tee result.log
-          grep -E 'FAILED.*::' result.log | cut -d ':' -f 1 | sort | uniq > failed_files.txt
+          exit_code=${PIPESTATUS[0]}
+
+          grep -E 'FAILED.*::' result.log | cut -d ':' -f 1 | sort | uniq > failed_files.txt || true
           echo "Failed test files:"
-          cat failed_files.txt
+          cat failed_files.txt || true
+
+          exit $exit_code
 
       - name: Add Failed Files to Summary (Table)
         if: always()
         run: |
-          {
-            echo "### ❌ Failed Test Files"
-            echo ""
-            echo "| File Path |"
-            echo "|-----------|"
-            while read -r file; do
-              echo "| $file |"
-            done < failed_files.txt
-          } >> $GITHUB_STEP_SUMMARY
+          if [[ -s failed_files.txt ]]; then
+            {
+              echo "### ❌ Failed Test Files"
+              echo ""
+              echo "| File Path |"
+              echo "|-----------|"
+              while read -r file; do
+                echo "| $file |"
+              done < failed_files.txt
+            } >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ✅ All integration tests passed!" >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Upload Failed Files Summary
         if: always()
