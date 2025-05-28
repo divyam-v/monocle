@@ -32,20 +32,51 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install ".[dev]"
-          pip install pytest-cov==6.1.0
 
-      - name: Run unit tests with coverage
+      - name: Run unit tests
+        id: run-tests
         run: |
-          pytest --cov=./ --cov-report=term --cov-report=xml tests/unit
+          set -e
+          pytest tests/unit --tb=short | tee result.log
+          EXIT_CODE=${PIPESTATUS[0]}
+          grep -E 'FAILED.*::' result.log | cut -d ':' -f 1 | sort | uniq > failed_files.txt
+          echo "Failed test files:"
+          cat failed_files.txt
+          exit $EXIT_CODE
 
-      - name: Upload coverage to GitHub summary
+
+      - name: Add Failed Files to Summary (Table)
         if: always()
         run: |
-          echo '### Pytest Coverage Report' >> $GITHUB_STEP_SUMMARY
-          coverage report >> $GITHUB_STEP_SUMMARY
+          if [[ -s failed_files.txt ]]; then
+            {
+              echo "### ❌ Failed Test Files"
+              echo ""
+              echo "| File Path |"
+              echo "|-----------|"
+              while read -r file; do
+                echo "| $file |"
+              done < failed_files.txt
+            } >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ✅ All unit tests passed!" >> $GITHUB_STEP_SUMMARY
+          fi
 
-      - name: Upload coverage artifact
+      - name: Upload Failed Files Summary (if any)
+        if: always()
+        run: |
+          if [[ -f failed_files.txt && -s failed_files.txt ]]; then
+            echo "Uploading failed_files.txt..."
+          else
+            echo "No failed files to upload"
+            # Create an empty file to avoid artifact upload failure
+            echo "" > failed_files.txt
+          fi
+
+      - name: Upload Failed Files
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-xml
-          path: coverage.xml
+          name: failed-test-files
+          path: failed_files.txt
+          retention-days: 7
