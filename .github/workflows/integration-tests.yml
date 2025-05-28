@@ -53,30 +53,14 @@ jobs:
 
       - name: Run integration tests
         run: |
-          pytest tests/integration --junitxml=test-results.xml || echo "Tests failed but continuing"
+          pytest tests/integration --tb=short | tee result.log
+          grep -E 'FAILED.*::' result.log | cut -d ':' -f 1 | sort | uniq > failed_files.txt
+          echo "Failed test files:"
+          cat failed_files.txt
 
-      - name: Generate test summary
-        if: always()
-        run: |
-          echo '### Failed Tests Summary' >> $GITHUB_STEP_SUMMARY
-          python -c '
-          import xml.etree.ElementTree as ET
-          tree = ET.parse("test-results.xml")
-          root = tree.getroot()
-          failures = root.findall(".//failure")
-          if failures:
-              for failure in failures:
-                  testcase = failure.getparent()
-                  print(f"❌ **{testcase.get(\"classname\")}::{testcase.get(\"name\")}**", file=open("$GITHUB_STEP_SUMMARY", "a"))
-                  print(f"```\n{failure.text}\n```\n", file=open("$GITHUB_STEP_SUMMARY", "a"))
-          else:
-              print("✅ All tests passed!", file=open("$GITHUB_STEP_SUMMARY", "a"))
-          '
-
-      - name: Upload test results
-        if: always()
+      - name: Upload Failed Files Summary
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
-          path: test-results.xml
+          name: failed-test-files
+          path: failed_files.txt
           retention-days: 7
