@@ -58,6 +58,18 @@ jobs:
           echo "Failed test files:"
           cat failed_files.txt
 
+      - name: Add Failed Files to Summary (Table)
+        run: |
+          {
+            echo "### ❌ Failed Test Files"
+            echo ""
+            echo "| File Path |"
+            echo "|-----------|"
+            while read -r file; do
+              echo "| $file |"
+            done < failed_files.txt
+          } >> $GITHUB_STEP_SUMMARY
+
       - name: Upload Failed Files Summary
         uses: actions/upload-artifact@v4
         with:
