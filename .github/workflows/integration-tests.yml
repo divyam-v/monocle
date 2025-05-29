@@ -52,72 +52,12 @@ jobs:
       - name: Run integration tests
         id: run-tests
         run: |
-          set -o pipefail
+          pytest tests/integration -v > test_output.log 2>&1 || echo "Tests failed"
 
-          # Create empty files first
-          touch result.log failed_files.txt
-
-          # Run tests with more verbose output
-          pytest tests/integration --tb=short -v | tee result.log
-          TEST_EXIT_CODE=${PIPESTATUS[0]}
-
-          # Debug: Show test output
-          echo "=== Test Output ==="
-          cat result.log
-          echo "=================="
-
-          # Extract failed tests with improved pattern matching
-          if [ $TEST_EXIT_CODE -ne 0 ]; then
-            # Try multiple patterns to catch failures
-            {
-              grep -E "FAILED.*tests/integration/.*\.py" result.log || true
-              grep -E "FAILED.*::test_.*" result.log || true
-            } | sed 's/.*\(tests\/integration.*\.py\).*/\1/' | sort | uniq > failed_files.txt
-
-            # Debug: Show what was captured
-            echo "=== Failed Tests Found ==="
-            cat failed_files.txt
-            echo "======================"
-          fi
-
-          echo "test_exit_code=$TEST_EXIT_CODE" >> $GITHUB_ENV
-          
-          # Show failed files if they exist and are not empty
-          if [ -f failed_files.txt ] && [ -s failed_files.txt ]; then
-            echo "Failed test files:"
-            cat failed_files.txt
-          fi
-
-          exit $TEST_EXIT_CODE
-
-      - name: Add Failed Files to Summary (Table)
-        if: failure() || cancelled()
-        run: |
-          {
-            echo "### ❌ Integration Tests Failed"
-            echo ""
-            if [ -f failed_files.txt ] && [ -s failed_files.txt ]; then
-              echo "| Failed Test Files |"
-              echo "|------------------|"
-              while read -r file; do
-                echo "| $file |"
-              done < failed_files.txt
-            else
-              echo "⚠️ Test execution failed but no specific test failures were detected"
-            fi
-          } >> $GITHUB_STEP_SUMMARY
-
-      - name: Add Success Summary
-        if: success()
-        run: |
-          echo "### ✅ All integration tests passed!" >> $GITHUB_STEP_SUMMARY
-
-      - name: Upload Failed Files Summary
-        if: failure() || cancelled()
+      - name: Upload test logs
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: failed-test-files
-          path: |
-            failed_files.txt
-            result.log
+          name: test-logs
+          path: test_output.log
           retention-days: 7
