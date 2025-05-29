@@ -54,24 +54,40 @@ jobs:
         run: |
           set -o pipefail
 
-          # Run tests and capture output
-          pytest tests/integration --tb=short | tee result.log
+          # Create empty files first
+          touch result.log failed_files.txt
+
+          # Run tests with more verbose output
+          pytest tests/integration --tb=short -v | tee result.log
           TEST_EXIT_CODE=${PIPESTATUS[0]}
 
-          # Extract failed tests (only if there are failures)
+          # Debug: Show test output
+          echo "=== Test Output ==="
+          cat result.log
+          echo "=================="
+
+          # Extract failed tests with improved pattern matching
           if [ $TEST_EXIT_CODE -ne 0 ]; then
-            grep -E 'FAILED.*::' result.log | cut -d ':' -f 1 | sort | uniq > failed_files.txt
+            # Try multiple patterns to catch failures
+            {
+              grep -E "FAILED.*tests/integration/.*\.py" result.log || true
+              grep -E "FAILED.*::test_.*" result.log || true
+            } | sed 's/.*\(tests\/integration.*\.py\).*/\1/' | sort | uniq > failed_files.txt
+
+            # Debug: Show what was captured
+            echo "=== Failed Tests Found ==="
+            cat failed_files.txt
+            echo "======================"
           fi
 
           echo "test_exit_code=$TEST_EXIT_CODE" >> $GITHUB_ENV
           
-          # Show failed files if any
-          if [ -f failed_files.txt ]; then
+          # Show failed files if they exist and are not empty
+          if [ -f failed_files.txt ] && [ -s failed_files.txt ]; then
             echo "Failed test files:"
             cat failed_files.txt
           fi
 
-          # Important: Exit with the original test exit code
           exit $TEST_EXIT_CODE
 
       - name: Add Failed Files to Summary (Table)
