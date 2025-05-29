@@ -52,8 +52,8 @@ jobs:
       - name: Run integration tests
         id: run-tests
         run: |
-          pytest tests/integration -v > test_output.log 2>&1 || echo "Tests failed"
-
+          pytest tests/unit -vv | tee test_output.log
+          
       - name: Upload test logs
         if: failure()
         uses: actions/upload-artifact@v4

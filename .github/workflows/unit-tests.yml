@@ -36,7 +36,7 @@ jobs:
       - name: Run unit tests
         id: run-tests
         run: |
-          pytest tests/unit -v > test_output.log 2>&1 || echo "Tests failed"
+          pytest tests/unit -vv | tee test_output.log
 
       - name: Upload test logs
         if: failure()
