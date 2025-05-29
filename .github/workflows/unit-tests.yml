@@ -60,22 +60,3 @@ jobs:
           else
             echo "### ✅ All unit tests passed!" >> $GITHUB_STEP_SUMMARY
           fi
-
-      - name: Upload Failed Files Summary (if any)
-        if: always()
-        run: |
-          if [[ -f failed_files.txt && -s failed_files.txt ]]; then
-            echo "Uploading failed_files.txt..."
-          else
-            echo "No failed files to upload"
-            # Create an empty file to avoid artifact upload failure
-            echo "" > failed_files.txt
-          fi
-
-      - name: Upload Failed Files
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: failed-test-files
-          path: failed_files.txt
-          retention-days: 7
