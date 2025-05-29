@@ -53,15 +53,20 @@ jobs:
         id: run-tests
         run: |
           set -o pipefail
-          pytest tests/integration --tb=short | tee result.log
-          exit_code=${PIPESTATUS[0]}
 
+          # Run tests and capture exit code
+          pytest tests/integration --tb=short | tee result.log
+          TEST_EXIT_CODE=${PIPESTATUS[0]}
+
+          # Always create failed_files.txt
           touch failed_files.txt
           grep -E 'FAILED.*::' result.log | cut -d ':' -f 1 | sort | uniq >> failed_files.txt || true
+
           echo "Failed test files:"
           cat failed_files.txt || true
 
-          exit $exit_code
+          # Exit with actual test result **after** everything else
+          exit $TEST_EXIT_CODE
 
       - name: Add Failed Files to Summary (Table)
         if: always()
