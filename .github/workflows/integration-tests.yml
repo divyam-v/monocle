@@ -54,32 +54,40 @@ jobs:
         run: |
           set -o pipefail
 
+          # Create result.log and failed_files.txt first
+          touch result.log failed_files.txt
+
           # Run tests and capture exit code
-          pytest tests/integration --tb=short | tee result.log
+          pytest tests/integration --tb=short | tee result.log || true
           TEST_EXIT_CODE=${PIPESTATUS[0]}
 
-          # Always create failed_files.txt
-          touch failed_files.txt
-          grep -E 'FAILED.*::' result.log | cut -d ':' -f 1 | sort | uniq >> failed_files.txt || true
+          # Extract failed tests
+          grep -E 'FAILED.*::' result.log | cut -d ':' -f 1 | sort | uniq > failed_files.txt || true
 
+          echo "test_exit_code=$TEST_EXIT_CODE" >> $GITHUB_ENV
+
+          # Show failed files
           echo "Failed test files:"
           cat failed_files.txt || true
 
-          # Exit with actual test result **after** everything else
           exit $TEST_EXIT_CODE
 
       - name: Add Failed Files to Summary (Table)
         if: always()
         run: |
-          if [[ -f failed_files.txt && -s failed_files.txt ]]; then
+          if [[ "${{ env.test_exit_code }}" != "0" ]]; then
             {
-              echo "### ❌ Failed Test Files"
+              echo "### ❌ Integration Tests Failed"
               echo ""
-              echo "| File Path |"
-              echo "|-----------|"
-              while read -r file; do
-                echo "| $file |"
-              done < failed_files.txt
+              if [[ -f failed_files.txt && -s failed_files.txt ]]; then
+                echo "| Failed Test Files |"
+                echo "|------------------|"
+                while read -r file; do
+                  echo "| $file |"
+                done < failed_files.txt
+              else
+                echo "⚠️ Test execution failed but no specific test failures were detected"
+              fi
             } >> $GITHUB_STEP_SUMMARY
           else
             echo "### ✅ All integration tests passed!" >> $GITHUB_STEP_SUMMARY
