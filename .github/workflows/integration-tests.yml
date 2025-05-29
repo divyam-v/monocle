@@ -56,7 +56,8 @@ jobs:
           pytest tests/integration --tb=short | tee result.log
           exit_code=${PIPESTATUS[0]}
 
-          grep -E 'FAILED.*::' result.log | cut -d ':' -f 1 | sort | uniq > failed_files.txt || true
+          touch failed_files.txt
+          grep -E 'FAILED.*::' result.log | cut -d ':' -f 1 | sort | uniq >> failed_files.txt || true
           echo "Failed test files:"
           cat failed_files.txt || true
 
